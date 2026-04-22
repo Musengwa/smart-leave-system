@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { LogIn } from 'lucide-react';
 
 export default function Login() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -20,12 +20,12 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(name, email);
 
     if (result.success) {
       navigate('/dashboard');
     } else {
-      setError(result.error ?? 'Invalid login credentials.');
+      setError(result.error ?? 'Unable to sign in with the provided details.');
     }
 
     setLoading(false);
@@ -42,11 +42,23 @@ export default function Login() {
           </div>
           <CardTitle className="text-2xl text-center">Smart Leave System</CardTitle>
           <CardDescription className="text-center">
-            Employee access only. Sign in with your assigned account.
+            Enter your name and work email to continue.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Jane Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -58,18 +70,6 @@ export default function Login() {
                 required
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
 
             {error && (
               <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
@@ -78,7 +78,7 @@ export default function Login() {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Signing in...' : 'Continue'}
             </Button>
           </form>
         </CardContent>

@@ -1,12 +1,39 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 
-interface User {
+interface EmployeeRow {
   id: string;
   name: string;
   email: string;
+  gender: 'male' | 'female' | 'other';
+  job_title: string | null;
+  department: string | null;
+  hire_date: string;
+  balance_annual: number;
+  balance_sick: number;
+  balance_maternity: number;
+  balance_paternity: number;
+  balance_compassionate: number;
+  balance_study: number;
+}
+
+export interface User {
+  id: string;
   employeeId: string;
+  name: string;
+  email: string;
+  gender: 'male' | 'female' | 'other';
+  jobTitle: string | null;
+  department: string | null;
+  hireDate: string;
+  balances: {
+    annual: number;
+    sick: number;
+    maternity: number;
+    paternity: number;
+    compassionate: number;
+    study: number;
+  };
 }
 
 interface LoginResult {
@@ -16,87 +43,148 @@ interface LoginResult {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<LoginResult>;
+  login: (name: string, email: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const STORAGE_KEY = 'hr_leave_current_user';
 
-const formatNameFromEmail = (email?: string) => {
-  if (!email) return 'Employee';
-  const localPart = email.split('@')[0] ?? '';
-  return localPart
-    .replace(/[._-]/g, ' ')
-    .trim()
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ') || 'Employee';
-};
+const normalizeName = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase();
 
-const mapSupabaseUser = (supabaseUser: SupabaseUser): User => {
-  const metadata = supabaseUser.user_metadata ?? {};
-  const name = metadata.full_name ?? metadata.name ?? formatNameFromEmail(supabaseUser.email);
-  const employeeId = metadata.employee_id ?? metadata.employeeId ?? `EMP-${supabaseUser.id.slice(0, 8).toUpperCase()}`;
+const mapEmployee = (employee: EmployeeRow): User => ({
+  id: employee.id,
+  employeeId: employee.id,
+  name: employee.name,
+  email: employee.email,
+  gender: employee.gender,
+  jobTitle: employee.job_title,
+  department: employee.department,
+  hireDate: employee.hire_date,
+  balances: {
+    annual: employee.balance_annual,
+    sick: employee.balance_sick,
+    maternity: employee.balance_maternity,
+    paternity: employee.balance_paternity,
+    compassionate: employee.balance_compassionate,
+    study: employee.balance_study,
+  },
+});
 
-  return {
-    id: supabaseUser.id,
-    name,
-    email: supabaseUser.email ?? '',
-    employeeId,
-  };
-};
+const getEmployeeByEmail = async (email: string) =>
+  supabase
+    .from('employees')
+    .select(
+      `
+      id,
+      name,
+      email,
+      gender,
+      job_title,
+      department,
+      hire_date,
+      balance_annual,
+      balance_sick,
+      balance_maternity,
+      balance_paternity,
+      balance_compassionate,
+      balance_study
+      `,
+    )
+    .eq('email', email)
+    .maybeSingle<EmployeeRow>();
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const initializeAuth = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (!error && data.session?.user) {
-        setUser(mapSupabaseUser(data.session.user));
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+          if (isMounted) setIsLoading(false);
+          return;
+        }
+
+        const persistedUser = JSON.parse(stored) as User;
+        if (!persistedUser.email || !persistedUser.name) {
+          localStorage.removeItem(STORAGE_KEY);
+          if (isMounted) setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = await getEmployeeByEmail(persistedUser.email.toLowerCase());
+
+        if (error || !data || normalizeName(data.name) !== normalizeName(persistedUser.name)) {
+          localStorage.removeItem(STORAGE_KEY);
+          if (isMounted) setUser(null);
+        } else if (isMounted) {
+          setUser(mapEmployee(data));
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+        if (isMounted) setUser(null);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initializeAuth();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
-      } else {
-        setUser(null);
-      }
-    });
-
     return () => {
-      authListener.subscription.unsubscribe();
+      isMounted = false;
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<LoginResult> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+  const login = async (name: string, email: string): Promise<LoginResult> => {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (error || !data.user) {
+    if (!normalizedName || !normalizedEmail) {
       return {
         success: false,
-        error: error?.message ?? 'Unable to sign in.',
+        error: 'Name and email are required.',
       };
     }
 
-    setUser(mapSupabaseUser(data.user));
+    const { data, error } = await getEmployeeByEmail(normalizedEmail);
+
+    if (error) {
+      return {
+        success: false,
+        error: 'Unable to sign in right now. Please try again.',
+      };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error: 'No employee record found for this email.',
+      };
+    }
+
+    if (normalizeName(data.name) !== normalizeName(normalizedName)) {
+      return {
+        success: false,
+        error: 'Name does not match this email address.',
+      };
+    }
+
+    const mappedUser = mapEmployee(data);
+    setUser(mappedUser);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
+
     return { success: true };
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
     setUser(null);
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   return (

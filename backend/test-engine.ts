@@ -4,9 +4,8 @@
 import { runDecisionEngine } from "./src/engine/index";
 import { EmployeeProfile, LeaveRequest } from "./src/engine/types";
 
-// ─── Fake employee (normally comes from Supabase) ─────────────────────────────
 const employee: EmployeeProfile = {
-  id: "test-001",
+  id: "0d796d5a-89f2-4a70-be32-bd7859098ff4",
   name: "Chanda Mwamba",
   gender: "female",
   monthsWorked: 30,
@@ -77,3 +76,7 @@ tests.forEach(({ label, request }) => {
   console.log(`   Can override via chat: ${result.canOverride}`);
   console.log();
 });
+// Quick API test - run this in browser console or a test file
+fetch("http://localhost:3000/health")
+  .then(res => res.json())
+  .then(console.log) // should print {status: "ok"}

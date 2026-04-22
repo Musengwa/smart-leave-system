@@ -8,33 +8,84 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Calendar } from 'lucide-react';
+import { Calendar, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { submitLeaveRequest, calculateDays } from '../services/leaveService';
 
 export default function LeaveRequest() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     leaveType: '',
     startDate: '',
     endDate: '',
     reason: '',
+    hasMedicalCert: false,
+    isEmergency: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to AI chat with leave request data
-    navigate('/ai-chat', { state: { leaveRequest: formData } });
+    if (!user?.id) {
+      toast.error('Employee record not found. Please log in again.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const days = calculateDays(formData.startDate, formData.endDate);
+
+      const response = await submitLeaveRequest({
+        employeeId: user.id,
+        leaveType: formData.leaveType,
+        daysRequested: days,
+        startDate: formData.startDate,
+        reason: formData.reason,
+        hasMedicalCert: formData.hasMedicalCert,
+        isEmergency: formData.isEmergency,
+      });
+
+      // REFER_HR — no chat, show message and go to dashboard
+      if (!response.chatEnabled) {
+        toast.warning('Your request has been referred to HR. Please contact HR directly.');
+        navigate('/dashboard', {
+          state: { referralMessage: response.message, decision: response.decision }
+        });
+        return;
+      }
+
+      // All other decisions — go to chat with session context
+      navigate('/ai-chat', {
+        state: {
+          leaveRequest: formData,
+          sessionId: response.sessionId,
+          decision: response.decision,
+          openingMessage: response.openingMessage,
+        }
+      });
+
+    } catch (err: any) {
+      const message = err?.message ?? 'Something went wrong. Please try again.';
+      if (message.includes('[404]') && message.toLowerCase().includes('employee not found')) {
+        toast.error('Employee not found in backend database. Confirm frontend and backend use the same Supabase project.');
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Submit Leave Request</h1>
@@ -89,7 +140,6 @@ export default function LeaveRequest() {
                     <SelectItem value="paternity">Paternity Leave</SelectItem>
                     <SelectItem value="compassionate">Compassionate Leave</SelectItem>
                     <SelectItem value="study">Study Leave</SelectItem>
-                    <SelectItem value="unpaid">Unpaid Leave</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -107,7 +157,6 @@ export default function LeaveRequest() {
                     required
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date *</Label>
                   <Input
@@ -132,35 +181,60 @@ export default function LeaveRequest() {
                   rows={4}
                   required
                 />
-                <p className="text-xs text-gray-500">
-                  You'll have the opportunity to discuss this further with our AI assistant
-                </p>
+              </div>
+
+              {/* Extra flags */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasMedicalCert}
+                    onChange={(e) => handleChange('hasMedicalCert', e.target.checked)}
+                  />
+                  I have a medical certificate
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isEmergency}
+                    onChange={(e) => handleChange('isEmergency', e.target.checked)}
+                  />
+                  This is an emergency
+                </label>
               </div>
 
               {/* Info Box */}
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
                 <p className="text-xs sm:text-sm text-amber-800">
-                  <strong>Next Step:</strong> After submitting this form, you'll be connected with our AI assistant. 
-                  The assistant will review your request, answer questions, and may suggest alternative dates if needed.
+                  <strong>Next Step:</strong> After submitting, our AI assistant will review your request against
+                  Zambian labour law and your leave balance, then guide you through the outcome.
                 </p>
               </div>
 
-              {/* Submit Button */}
+              {/* Submit */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate('/dashboard')}
                   className="flex-1 w-full"
+                  disabled={loading}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 w-full"
-                  disabled={!formData.leaveType || !formData.startDate || !formData.endDate || !formData.reason}
+                  disabled={!formData.leaveType || !formData.startDate || !formData.endDate || !formData.reason || loading}
                 >
-                  Continue to AI Assistant
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </span>
+                  ) : (
+                    'Continue to AI Assistant'
+                  )}
                 </Button>
               </div>
             </form>

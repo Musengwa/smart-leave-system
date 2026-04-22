@@ -3,9 +3,33 @@ import { ChatContext, ChatMessage, DecisionResult, LeaveRequest, EmployeeProfile
 import { buildSystemPrompt } from "./context";
 import { runDecisionEngine } from "../engine/index";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+
+function buildFallbackReply(decision: DecisionResult): string {
+  const suggestions = decision.suggestions?.length
+    ? ` Suggested next steps: ${decision.suggestions.join(" ")}`
+    : "";
+
+  if (decision.decision === "APPROVED") {
+    return `Your request is currently approved.${suggestions} If you want, I can still explain the policy details.`;
+  }
+
+  if (decision.decision === "DENIED") {
+    return `${decision.reason}${suggestions}`;
+  }
+
+  if (decision.decision === "PENDING_INFO") {
+    return `${decision.reason} Please share the missing details so I can help re-evaluate.`;
+  }
+
+  return "This request has been referred to HR. Please contact HR for the next steps.";
+}
+
+function buildFallbackOpeningMessage(employee: EmployeeProfile, decision: DecisionResult): string {
+  return `Hello ${employee.name}, your leave request has been received. ${buildFallbackReply(decision)}`;
+}
 
 // ─── Send a message and get a response ───────────────────────────────────────
 
@@ -26,6 +50,23 @@ export async function sendChatMessage(
   // If engine changed its decision, update the context with the new decision
   const activeDecision = reEvalResult ?? context.decision;
 
+  if (!openai) {
+    const reply = buildFallbackReply(activeDecision);
+    const finalHistory: ChatMessage[] = [
+      ...updatedHistory,
+      { role: "assistant", content: reply },
+    ];
+
+    return {
+      reply,
+      updatedContext: {
+        ...context,
+        decision: activeDecision,
+        history: finalHistory,
+      },
+    };
+  }
+
   // Build the system prompt with current decision context
   const systemPrompt = buildSystemPrompt(
     context.employee,
@@ -43,16 +84,21 @@ export async function sendChatMessage(
     })),
   ];
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages,
-    max_tokens: 500,
-    temperature: 0.4, // low temp = consistent, professional tone
-  });
+  let reply = buildFallbackReply(activeDecision);
+  try {
+    const response = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages,
+      max_tokens: 500,
+      temperature: 0.4, // low temp = consistent, professional tone
+    });
 
-  const reply =
-    response.choices[0]?.message?.content?.trim() ??
-    "I'm sorry, I wasn't able to process that. Please try again.";
+    reply =
+      response.choices[0]?.message?.content?.trim() ??
+      "I'm sorry, I wasn't able to process that. Please try again.";
+  } catch (error) {
+    console.error("[sendChatMessage] OpenAI fallback triggered:", error);
+  }
 
   // Append assistant reply to history
   const finalHistory: ChatMessage[] = [
@@ -81,6 +127,7 @@ async function checkForReEvaluation(
 
   // Hard stop — this decision cannot be changed via chat
   if (!context.decision.canOverride) return null;
+  if (!openai) return null;
 
   // Ask GPT to extract any new structured info from the user's message
   // This keeps the re-evaluation logic clean — we don't do regex hacks
@@ -99,18 +146,17 @@ If there is no new actionable information, respond with exactly: null
 Do not include any explanation or markdown.
   `.trim();
 
-  const extraction = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: extractionPrompt }],
-    max_tokens: 100,
-    temperature: 0,
-  });
-
-  const raw = extraction.choices[0]?.message?.content?.trim();
-
-  if (!raw || raw === "null") return null;
-
   try {
+    const extraction = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages: [{ role: "user", content: extractionPrompt }],
+      max_tokens: 100,
+      temperature: 0,
+    });
+
+    const raw = extraction.choices[0]?.message?.content?.trim();
+    if (!raw || raw === "null") return null;
+
     const updatedFields = JSON.parse(raw);
 
     // Merge new fields into the original request
@@ -137,6 +183,9 @@ export async function buildOpeningMessage(
   request: LeaveRequest,
   decision: DecisionResult
 ): Promise<string> {
+  if (!openai) {
+    return buildFallbackOpeningMessage(employee, decision);
+  }
 
   const systemPrompt = buildSystemPrompt(employee, request, decision, false);
 
@@ -149,18 +198,23 @@ export async function buildOpeningMessage(
       ? "Greet the employee and ask for the specific missing information needed to make a decision."
       : "This should never reach chat — REFER_HR is a hard stop.";
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: openingInstruction },
-    ],
-    max_tokens: 300,
-    temperature: 0.4,
-  });
+  try {
+    const response = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: openingInstruction },
+      ],
+      max_tokens: 300,
+      temperature: 0.4,
+    });
 
-  return (
-    response.choices[0]?.message?.content?.trim() ??
-    `Hello ${employee.name}, your leave request has been received.`
-  );
+    return (
+      response.choices[0]?.message?.content?.trim() ??
+      buildFallbackOpeningMessage(employee, decision)
+    );
+  } catch (error) {
+    console.error("[buildOpeningMessage] OpenAI fallback triggered:", error);
+    return buildFallbackOpeningMessage(employee, decision);
+  }
 }

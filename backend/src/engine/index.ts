@@ -1,11 +1,10 @@
 import { LeaveRequest, EmployeeProfile, DecisionResult, LeaveType } from "./types";
 import { evaluateAnnual } from "../modules/annual";
 import { evaluateSick } from "../modules/sick";
-// Future modules — uncomment as you build them:
-// import { evaluateMaternity } from "../modules/maternity";
-// import { evaluatePaternity } from "../modules/paternity";
-// import { evaluateCompassionate } from "../modules/compassionate";
-// import { evaluateStudy } from "../modules/study";
+import { evaluateMaternity } from "../modules/maternity";
+import { evaluatePaternity } from "../modules/paternity";
+import { evaluateCompassionate } from "../modules/compassionate";
+import { evaluateStudy } from "../modules/study";
 
 // ─── Module Registry ──────────────────────────────────────────────────────────
 // Add each module here as it gets built. The engine stays clean — it just
@@ -19,10 +18,10 @@ type ModuleEvaluator = (
 const moduleRegistry: Record<LeaveType, ModuleEvaluator | null> = {
   annual: evaluateAnnual,
   sick: evaluateSick,
-  maternity: null, // TODO
-  paternity: null, // TODO
-  compassionate: null, // TODO
-  study: null, // TODO
+  maternity: evaluateMaternity,
+  paternity: evaluatePaternity,
+  compassionate: evaluateCompassionate,
+  study: evaluateStudy,
 };
 
 // ─── Main Engine Entry Point ──────────────────────────────────────────────────

@@ -1,11 +1,9 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ChatContext, ChatMessage, DecisionResult, LeaveRequest, EmployeeProfile } from "../engine/types";
 import { buildSystemPrompt } from "./context";
 import { runDecisionEngine } from "../engine/index";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // ─── Send a message and get a response ───────────────────────────────────────
 
@@ -14,47 +12,36 @@ export async function sendChatMessage(
   context: ChatContext
 ): Promise<{ reply: string; updatedContext: ChatContext }> {
 
-  // Append the new user message to history
   const updatedHistory: ChatMessage[] = [
     ...context.history,
     { role: "user", content: userMessage },
   ];
 
-  // Check if the user's message contains enough new info to re-run the engine
   const reEvalResult = await checkForReEvaluation(userMessage, context);
-
-  // If engine changed its decision, update the context with the new decision
   const activeDecision = reEvalResult ?? context.decision;
 
-  // Build the system prompt with current decision context
   const systemPrompt = buildSystemPrompt(
     context.employee,
     context.request,
     activeDecision,
-    reEvalResult !== null // flag so ChatGPT knows a re-evaluation just happened
+    reEvalResult !== null
   );
 
-  // Build messages array for OpenAI — system prompt + full history
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    ...updatedHistory.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-  ];
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages,
-    max_tokens: 500,
-    temperature: 0.4, // low temp = consistent, professional tone
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction: systemPrompt,
   });
 
-  const reply =
-    response.choices[0]?.message?.content?.trim() ??
-    "I'm sorry, I wasn't able to process that. Please try again.";
+  // Build history in Gemini format (excludes the latest user message)
+  const geminiHistory = updatedHistory.slice(0, -1).map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
 
-  // Append assistant reply to history
+  const chat = model.startChat({ history: geminiHistory });
+  const result = await chat.sendMessage(userMessage);
+  const reply = result.response.text();
+
   const finalHistory: ChatMessage[] = [
     ...updatedHistory,
     { role: "assistant", content: reply },
@@ -71,66 +58,46 @@ export async function sendChatMessage(
 }
 
 // ─── Re-evaluation Logic ──────────────────────────────────────────────────────
-// Checks if the user has provided new information that could change the decision.
-// Only runs if the current decision has canOverride: true.
 
 async function checkForReEvaluation(
   userMessage: string,
   context: ChatContext
 ): Promise<DecisionResult | null> {
 
-  // Hard stop — this decision cannot be changed via chat
   if (!context.decision.canOverride) return null;
 
-  // Ask GPT to extract any new structured info from the user's message
-  // This keeps the re-evaluation logic clean — we don't do regex hacks
-  const extractionPrompt = `
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const prompt = `
 You are a data extractor. The user is chatting about a leave request.
 Their original request: ${JSON.stringify(context.request)}
-
 The user just said: "${userMessage}"
 
-If the user has provided NEW information that changes the leave request 
-(e.g. fewer days, confirmation they have a medical cert, a different start date),
+If the user provided NEW information that changes the request
+(e.g. fewer days, has a medical cert, different start date),
 respond ONLY with a JSON object of the changed fields. Example:
 {"daysRequested": 3, "hasMedicalCert": true}
 
-If there is no new actionable information, respond with exactly: null
-Do not include any explanation or markdown.
+If no new actionable information, respond with exactly: null
+No explanation, no markdown.
   `.trim();
 
-  const extraction = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: extractionPrompt }],
-    max_tokens: 100,
-    temperature: 0,
-  });
-
-  const raw = extraction.choices[0]?.message?.content?.trim();
+  const result = await model.generateContent(prompt);
+  const raw = result.response.text().trim();
 
   if (!raw || raw === "null") return null;
 
   try {
-    const updatedFields = JSON.parse(raw);
-
-    // Merge new fields into the original request
-    const updatedRequest: LeaveRequest = {
-      ...context.request,
-      ...updatedFields,
-    };
-
-    // Re-run the engine with updated request
-    const newDecision = runDecisionEngine(updatedRequest, context.employee);
-    return newDecision;
-
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const updatedFields = JSON.parse(clean);
+    const updatedRequest: LeaveRequest = { ...context.request, ...updatedFields };
+    return runDecisionEngine(updatedRequest, context.employee);
   } catch {
-    // Extraction failed to parse — just continue with existing decision
     return null;
   }
 }
 
-// ─── Build initial assistant message after form submission ───────────────────
-// This is the first thing the user sees when the chat opens.
+// ─── Opening message ──────────────────────────────────────────────────────────
 
 export async function buildOpeningMessage(
   employee: EmployeeProfile,
@@ -145,22 +112,13 @@ export async function buildOpeningMessage(
       ? "Greet the employee warmly, confirm their leave is approved, tell them the exact days approved, and invite any questions."
       : decision.decision === "DENIED"
       ? "Greet the employee, explain the reason for denial clearly but empathetically, and present any suggestions or alternatives."
-      : decision.decision === "PENDING_INFO"
-      ? "Greet the employee and ask for the specific missing information needed to make a decision."
-      : "This should never reach chat — REFER_HR is a hard stop.";
+      : "Greet the employee and ask for the specific missing information needed to make a decision.";
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: openingInstruction },
-    ],
-    max_tokens: 300,
-    temperature: 0.4,
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction: systemPrompt,
   });
 
-  return (
-    response.choices[0]?.message?.content?.trim() ??
-    `Hello ${employee.name}, your leave request has been received.`
-  );
+  const result = await model.generateContent(openingInstruction);
+  return result.response.text();
 }
