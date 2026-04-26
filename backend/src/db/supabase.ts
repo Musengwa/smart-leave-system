@@ -146,8 +146,17 @@ export async function updateLeaveRecord(
   const { error } = await supabase
     .from("leave_records")
     .update({
+      ...(updates.request !== undefined && {
+        request: updates.request,
+        leave_type: updates.request.leaveType,
+        days_requested: updates.request.daysRequested,
+        start_date: updates.request.startDate,
+      }),
       ...(updates.chatTranscript !== undefined && { chat_transcript: updates.chatTranscript }),
-      ...(updates.decision !== undefined && { decision: updates.decision }),
+      ...(updates.decision !== undefined && {
+        decision: updates.decision,
+        days_approved: updates.decision.daysApproved ?? null,
+      }),
       ...(updates.finalDecision !== undefined && { final_decision: updates.finalDecision }),
     })
     .eq("id", id);

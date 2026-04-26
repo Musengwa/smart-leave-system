@@ -1,8 +1,5 @@
 import { EmployeeProfile, LeaveRequest, DecisionResult } from "../engine/types";
 
-// ─── Zambian Leave Policy Reference ──────────────────────────────────────────
-// Baked into every system prompt so ChatGPT always has the legal grounding
-
 const ZAMBIAN_POLICY_REFERENCE = `
 ZAMBIAN LEAVE LAW REFERENCE (Employment Code Act No. 3 of 2019):
 - Annual Leave: Minimum 24 working days per year (S.56). Accrues at 2 days/month.
@@ -13,29 +10,24 @@ ZAMBIAN LEAVE LAW REFERENCE (Employment Code Act No. 3 of 2019):
 - Study Leave: Granted for approved educational purposes. Subject to HR and management approval.
 `.trim();
 
-// ─── Flag Descriptions ────────────────────────────────────────────────────────
-// Human-readable explanations of each flag, used to guide ChatGPT's response
-
 const FLAG_GUIDANCE: Record<string, string> = {
   INSUFFICIENT_BALANCE:
-    "The employee does not have enough leave days. Focus on what they DO have available and explore alternatives.",
+    "The employee does not have enough leave days. Focus on what they do have available and explore alternatives.",
   NEEDS_MEDICAL_CERT:
-    "The employee needs a medical certificate. Explain this clearly and tell them what happens if they don't provide one.",
+    "The employee needs a medical certificate. Explain this clearly and tell them what happens if they do not provide one.",
   INSUFFICIENT_SERVICE:
-    "The employee hasn't worked long enough to qualify. Be empathetic — explain the requirement and when they will qualify.",
+    "The employee has not worked long enough to qualify. Explain the requirement clearly and when they will qualify.",
   EXCEEDS_SINGLE_REQUEST_LIMIT:
-    "The request is too large for auto-approval. Explain why this needs HR and what they should expect from that process.",
+    "The request is too large for auto-approval. Explain why this needs HR and what they should expect from the process.",
   REQUIRES_DOCUMENTATION:
     "Supporting documents are needed. List what documents are typically required.",
   PARTIAL_APPROVAL_POSSIBLE:
-    "Some days can be approved even if not all. Proactively suggest this option to the employee.",
+    "Some days can be approved even if not all. Proactively suggest this option.",
   GENDER_INELIGIBLE:
     "The employee does not meet gender requirements for this leave type. Be factual and sensitive.",
   EMERGENCY_FLAGGED:
-    "The employee flagged this as an emergency. Acknowledge the urgency while explaining the process.",
+    "The employee flagged this as an emergency. Acknowledge urgency while explaining realistic next steps.",
 };
-
-// ─── Main Context Builder ─────────────────────────────────────────────────────
 
 export function buildSystemPrompt(
   employee: EmployeeProfile,
@@ -43,7 +35,6 @@ export function buildSystemPrompt(
   decision: DecisionResult,
   wasReEvaluated: boolean
 ): string {
-
   const flagGuidance = decision.flags
     .map((f) => `- ${FLAG_GUIDANCE[f] ?? f}`)
     .join("\n");
@@ -54,30 +45,31 @@ export function buildSystemPrompt(
       : "";
 
   const reEvalNote = wasReEvaluated
-    ? "\nNOTE: The decision engine just re-evaluated this request based on new information from the employee. Acknowledge that the decision has been updated."
+    ? "\nNOTE: The decision engine was just re-run with new user information. Acknowledge the updated outcome."
     : "";
 
   return `
 You are LeaveAI, a professional and empathetic HR leave assistant for a Zambian company.
-Your job is to explain leave decisions to employees and help them explore their options.
+Your role is to explain the decision engine output, collect useful clarifications, and help the employee understand options.
 
 IMPORTANT RULES:
-- You explain and discuss decisions — you NEVER make them. The decision engine is the authority.
-- You can collect new information from the employee and the engine will re-evaluate if needed.
-- Be warm, clear, and concise. No corporate jargon.
-- Always ground your answers in Zambian labour law when relevant.
-- Never make up policies or invent entitlements.
-- Keep responses under 4 sentences unless the employee asks for more detail.
+- You explain and discuss decisions. You never make the final decision yourself.
+- Use the engine decision and request details below as the source of truth.
+- You can answer broader workflow questions about this leave system, including form fields, review flow, and what happens between frontend submission and backend decision checks.
+- Base policy/legal statements on the Zambian policy reference below. Do not invent entitlements.
+- Avoid repeating the same wording from previous messages. If the user repeats a question, answer with new specifics or examples.
+- Be concise by default, but provide more detail when the user asks for it.
+- If something is outside available context, say so clearly and give the closest helpful guidance.
 
 ${ZAMBIAN_POLICY_REFERENCE}
 
-─── EMPLOYEE PROFILE ───────────────────────────────────────
+--- EMPLOYEE PROFILE ---
 Name: ${employee.name}
 Gender: ${employee.gender}
 Months worked: ${employee.monthsWorked} (${Math.floor(employee.monthsWorked / 12)} years, ${employee.monthsWorked % 12} months)
 Leave balances: ${formatBalances(employee)}
 
-─── CURRENT REQUEST ────────────────────────────────────────
+--- CURRENT REQUEST ---
 Leave type: ${request.leaveType}
 Days requested: ${request.daysRequested}
 Start date: ${request.startDate}
@@ -85,7 +77,7 @@ Reason: ${request.reason || "Not provided"}
 Has medical cert: ${request.hasMedicalCert ? "Yes" : "No"}
 Emergency: ${request.isEmergency ? "Yes" : "No"}
 
-─── ENGINE DECISION ────────────────────────────────────────
+--- ENGINE DECISION ---
 Decision: ${decision.decision}
 ${decision.daysApproved !== undefined ? `Days approved: ${decision.daysApproved}` : ""}
 Reason: ${decision.reason}
@@ -95,8 +87,6 @@ ${suggestionsText}
 ${reEvalNote}
   `.trim();
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatBalances(employee: EmployeeProfile): string {
   const b = employee.leaveBalance;

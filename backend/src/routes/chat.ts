@@ -56,6 +56,7 @@ router.post("/message", async (req: Request, res: Response) => {
 
     // ── Persist updated transcript and decision back to Supabase ─────────
     await updateLeaveRecord(sessionId, {
+      request: updatedContext.request,
       chatTranscript: updatedContext.history,
       decision: updatedContext.decision,
       // Only stamp finalDecision once the conversation reaches a firm state
@@ -101,3 +102,4 @@ router.get("/history/:sessionId", async (req: Request, res: Response) => {
 });
 
 export default router;
+
