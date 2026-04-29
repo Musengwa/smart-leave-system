@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -11,20 +11,65 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { submitLeaveRequest, calculateDays } from '../services/leaveService';
+import type { AdvicePrefillData } from '../components/AdviceChat';
+
+type LeaveRequestLocationState = {
+  prefill?: AdvicePrefillData;
+};
+
+const VALID_LEAVE_TYPES = new Set([
+  'annual',
+  'sick',
+  'maternity',
+  'paternity',
+  'compassionate',
+  'study',
+]);
+
+const isValidDateInput = (value: string | undefined) =>
+  Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
 
 export default function LeaveRequest() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
 
+  const prefill = (location.state as LeaveRequestLocationState | null)?.prefill;
+
+  const initialFormData = useMemo(() => {
+    const prefillLeaveType =
+      typeof prefill?.leaveType === 'string' && VALID_LEAVE_TYPES.has(prefill.leaveType)
+        ? prefill.leaveType
+        : '';
+
+    const prefillStartDate = isValidDateInput(prefill?.startDate) ? prefill?.startDate ?? '' : '';
+    const prefillEndDate = isValidDateInput(prefill?.endDate)
+      ? prefill?.endDate ?? ''
+      : prefillStartDate;
+
+    return {
+      leaveType: prefillLeaveType,
+      startDate: prefillStartDate,
+      endDate: prefillEndDate,
+      reason: typeof prefill?.reason === 'string' ? prefill.reason : '',
+      hasMedicalCert: Boolean(prefill?.hasMedicalCert),
+      isEmergency: Boolean(prefill?.isEmergency),
+    };
+  }, [prefill]);
+
   const [formData, setFormData] = useState({
-    leaveType: '',
-    startDate: '',
-    endDate: '',
-    reason: '',
-    hasMedicalCert: false,
-    isEmergency: false,
+    leaveType: initialFormData.leaveType,
+    startDate: initialFormData.startDate,
+    endDate: initialFormData.endDate,
+    reason: initialFormData.reason,
+    hasMedicalCert: initialFormData.hasMedicalCert,
+    isEmergency: initialFormData.isEmergency,
   });
+
+  useEffect(() => {
+    setFormData(initialFormData);
+  }, [initialFormData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,29 +92,30 @@ export default function LeaveRequest() {
         isEmergency: formData.isEmergency,
       });
 
-      // REFER_HR — no chat, show message and go to dashboard
+      // REFER_HR - no chat, show message and go to dashboard
       if (!response.chatEnabled) {
         toast.warning('Your request has been referred to HR. Please contact HR directly.');
         navigate('/dashboard', {
-          state: { referralMessage: response.message, decision: response.decision }
+          state: { referralMessage: response.message, decision: response.decision },
         });
         return;
       }
 
-      // All other decisions — go to chat with session context
+      // All other decisions - go to chat with session context
       navigate('/ai-chat', {
         state: {
           leaveRequest: formData,
           sessionId: response.sessionId,
           decision: response.decision,
           openingMessage: response.openingMessage,
-        }
+        },
       });
-
     } catch (err: any) {
       const message = err?.message ?? 'Something went wrong. Please try again.';
       if (message.includes('[404]') && message.toLowerCase().includes('employee not found')) {
-        toast.error('Employee not found in backend database. Confirm frontend and backend use the same Supabase project.');
+        toast.error(
+          'Employee not found in backend database. Confirm frontend and backend use the same Supabase project.',
+        );
       } else {
         toast.error(message);
       }
@@ -101,7 +147,8 @@ export default function LeaveRequest() {
               Leave Request Form
             </CardTitle>
             <CardDescription className="text-sm">
-              Provide your leave details. After submission, you'll chat with our AI assistant for approval and alternatives.
+              Provide your leave details. After submission, you'll chat with our AI assistant for
+              approval and alternatives.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -206,8 +253,9 @@ export default function LeaveRequest() {
               {/* Info Box */}
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
                 <p className="text-xs sm:text-sm text-amber-800">
-                  <strong>Next Step:</strong> After submitting, our AI assistant will review your request against
-                  Zambian labour law and your leave balance, then guide you through the outcome.
+                  <strong>Next Step:</strong> After submitting, our AI assistant will review your
+                  request against Zambian labour law and your leave balance, then guide you through
+                  the outcome.
                 </p>
               </div>
 
@@ -225,7 +273,13 @@ export default function LeaveRequest() {
                 <Button
                   type="submit"
                   className="flex-1 w-full"
-                  disabled={!formData.leaveType || !formData.startDate || !formData.endDate || !formData.reason || loading}
+                  disabled={
+                    !formData.leaveType ||
+                    !formData.startDate ||
+                    !formData.endDate ||
+                    !formData.reason ||
+                    loading
+                  }
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">

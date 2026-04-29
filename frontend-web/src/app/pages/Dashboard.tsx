@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import AdviceChat, { AdvicePrefillData } from '../components/AdviceChat';
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '../components/ui/chart';
 import { supabase } from '../../lib/supabase';
 import { FileText, BookOpen, Calendar, Clock, CheckCircle2, Loader2, PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
@@ -122,10 +123,12 @@ const getRecordStatus = (record: LeaveRecordRow): LeaveDecision =>
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [balances, setBalances] = useState(user?.balances ?? null);
   const [leaveRecords, setLeaveRecords] = useState<LeaveRecordRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [advicePrefill, setAdvicePrefill] = useState<AdvicePrefillData>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -313,6 +316,19 @@ export default function Dashboard() {
     },
   ];
 
+  const adviceBalances = {
+    annual: balances?.annual ?? 0,
+    sick: balances?.sick ?? 0,
+    maternity: balances?.maternity ?? 0,
+    paternity: balances?.paternity ?? 0,
+    compassionate: balances?.compassionate ?? 0,
+    study: balances?.study ?? 0,
+  };
+
+  const handleMakeLeaveRequest = () => {
+    navigate('/leave-request', { state: { prefill: advicePrefill } });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -361,6 +377,36 @@ export default function Dashboard() {
               </Card>
             );
           })}
+        </div>
+
+        {/* Advice + Request CTA */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="lg:col-span-2">
+            <AdviceChat balances={adviceBalances} onPrefillChange={setAdvicePrefill} />
+          </div>
+
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Make Leave Request</CardTitle>
+              <CardDescription className="text-sm">
+                Ready to apply? We will pre-fill your form with details captured from the advice chat.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-md border bg-gray-50 p-3 text-xs text-gray-600">
+                <p>Detected details:</p>
+                <p>Type: {advicePrefill.leaveType ?? 'Not set'}</p>
+                <p>Start date: {advicePrefill.startDate ?? 'Not set'}</p>
+                <p>End date: {advicePrefill.endDate ?? 'Not set'}</p>
+              </div>
+              <Button className="w-full" onClick={handleMakeLeaveRequest}>
+                Make Leave Request Now
+              </Button>
+              <p className="text-xs text-gray-500">
+                After submitting the form, you will continue to the full Leave AI chat.
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts */}
