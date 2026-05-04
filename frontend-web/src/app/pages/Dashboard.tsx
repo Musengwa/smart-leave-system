@@ -213,21 +213,30 @@ export default function Dashboard() {
       value: `${balances?.annual ?? 0} days`,
       description: 'Annual leave remaining',
       icon: Calendar,
-      color: 'text-blue-600',
+      iconClass: 'text-white',
+      cardClass: 'border-teal-500 bg-teal-600 text-white',
+      titleClass: 'text-teal-50',
+      descriptionClass: 'text-teal-100',
     },
     {
       title: 'Pending Requests',
       value: String(pendingRequests),
       description: 'Awaiting final decision',
       icon: Clock,
-      color: 'text-yellow-600',
+      iconClass: 'text-teal-300',
+      cardClass: 'border-zinc-900 bg-zinc-900 text-white',
+      titleClass: 'text-zinc-300',
+      descriptionClass: 'text-zinc-300',
     },
     {
       title: 'Approved Leaves',
       value: String(approvedThisYear),
       description: `Approved in ${currentYear}`,
       icon: CheckCircle2,
-      color: 'text-green-600',
+      iconClass: 'text-teal-600',
+      cardClass: 'border-teal-300 bg-white text-zinc-900',
+      titleClass: 'text-zinc-600',
+      descriptionClass: 'text-zinc-500',
     },
   ];
 
@@ -305,14 +314,14 @@ export default function Dashboard() {
       description: 'Request time off with AI assistance',
       icon: FileText,
       link: '/leave-request',
-      color: 'bg-blue-600',
+      color: 'bg-teal-600',
     },
     {
       title: 'View Leave Policies',
       description: 'Review company leave rules',
       icon: BookOpen,
       link: '/rules',
-      color: 'bg-purple-600',
+      color: 'bg-black',
     },
   ];
 
@@ -330,22 +339,22 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             Welcome back, {user?.name}!
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
             Manage your leave requests with our AI-powered system
           </p>
         </div>
 
         {loading && (
           <Card className="mb-6 sm:mb-8">
-            <CardContent className="py-8 flex items-center justify-center gap-2 text-sm text-gray-600">
+            <CardContent className="py-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading live dashboard data...
             </CardContent>
@@ -359,20 +368,20 @@ export default function Dashboard() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index}>
+              <Card key={index} className={`${stat.cardClass} ${index === 2 ? 'col-span-2 lg:col-span-1' : ''}`}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">
+                  <CardTitle className={`text-sm font-medium ${stat.titleClass}`}>
                     {stat.title}
                   </CardTitle>
-                  <Icon className={`h-5 w-5 ${stat.color}`} />
+                  <Icon className={`h-5 w-5 ${stat.iconClass}`} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                  <p className={`text-xs mt-1 ${stat.descriptionClass}`}>{stat.description}</p>
                 </CardContent>
               </Card>
             );
@@ -414,7 +423,7 @@ export default function Dashboard() {
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                <PieChartIcon className="h-5 w-5 text-blue-600" />
+                <PieChartIcon className="h-5 w-5 text-teal-600" />
                 Request Status
               </CardTitle>
               <CardDescription className="text-sm">Distribution across all requests</CardDescription>
@@ -441,7 +450,7 @@ export default function Dashboard() {
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                <PieChartIcon className="h-5 w-5 text-indigo-600" />
+                <PieChartIcon className="h-5 w-5 text-zinc-900" />
                 Approved Days by Type
               </CardTitle>
               <CardDescription className="text-sm">How approved leave days are allocated</CardDescription>
@@ -468,7 +477,7 @@ export default function Dashboard() {
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-green-600" />
+                <BarChart3 className="h-5 w-5 text-teal-700" />
                 Monthly Trend
               </CardTitle>
               <CardDescription className="text-sm">Submitted vs approved in the last 6 months</CardDescription>

@@ -8,7 +8,7 @@ import Rules from './pages/Rules';
 
 function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-600">
+    <div className="min-h-screen flex items-center justify-center bg-transparent text-muted-foreground">
       Checking session...
     </div>
   );

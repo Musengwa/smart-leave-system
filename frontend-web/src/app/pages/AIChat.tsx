@@ -20,10 +20,10 @@ interface Message {
 // ─── Decision badge config ────────────────────────────────────────────────────
 
 const DECISION_CONFIG = {
-  APPROVED:     { label: 'Approved',      color: 'bg-green-50 text-green-800',  Icon: CheckCircle  },
-  DENIED:       { label: 'Denied',        color: 'bg-red-50 text-red-800',      Icon: XCircle      },
-  PENDING_INFO: { label: 'Pending Info',  color: 'bg-yellow-50 text-yellow-800',Icon: Clock        },
-  REFER_HR:     { label: 'Referred to HR',color: 'bg-orange-50 text-orange-800',Icon: AlertCircle  },
+  APPROVED:     { label: 'Approved',      color: 'bg-teal-100 text-teal-900',   Icon: CheckCircle  },
+  DENIED:       { label: 'Denied',        color: 'bg-zinc-200 text-zinc-900',   Icon: XCircle      },
+  PENDING_INFO: { label: 'Pending Info',  color: 'bg-teal-50 text-teal-800',    Icon: Clock        },
+  REFER_HR:     { label: 'Referred to HR',color: 'bg-zinc-100 text-zinc-800',   Icon: AlertCircle  },
 };
 
 export default function AIChat() {
@@ -160,13 +160,13 @@ export default function AIChat() {
   const decisionCfg = decision ? DECISION_CONFIG[decision.decision] : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">AI Leave Assistant</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">AI Leave Assistant</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
             Discuss your leave request and get instant assistance
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function AIChat() {
           <Card className="lg:col-span-2">
             <CardHeader className="border-b">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Bot className="h-5 w-5 text-blue-600" />
+                <Bot className="h-5 w-5 text-teal-600" />
                 Chat with AI Assistant
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
@@ -193,17 +193,17 @@ export default function AIChat() {
                     key={message.id}
                     className={`flex gap-2 sm:gap-3 ${message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                   >
-                    <Avatar className={`h-7 w-7 sm:h-8 sm:w-8 ${message.sender === 'ai' ? 'bg-blue-600' : 'bg-gray-600'} flex items-center justify-center flex-shrink-0`}>
+                    <Avatar className={`h-7 w-7 sm:h-8 sm:w-8 ${message.sender === 'ai' ? 'bg-teal-600' : 'bg-zinc-900'} flex items-center justify-center flex-shrink-0`}>
                       {message.sender === 'ai'
                         ? <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                         : <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       }
                     </Avatar>
                     <div className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2.5 sm:p-3 ${
-                      message.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'
+                      message.sender === 'user' ? 'bg-black text-white' : 'bg-teal-50 text-zinc-900'
                     }`}>
                       <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.text}</p>
-                      <p className={`text-[10px] sm:text-xs mt-1 ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                      <p className={`text-[10px] sm:text-xs mt-1 ${message.sender === 'user' ? 'text-zinc-300' : 'text-teal-700'}`}>
                         {message.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -212,13 +212,13 @@ export default function AIChat() {
 
                 {isTyping && (
                   <div className="flex gap-2 sm:gap-3">
-                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 bg-blue-600 flex items-center justify-center">
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 bg-teal-600 flex items-center justify-center">
                       <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </Avatar>
-                    <div className="bg-gray-100 rounded-lg p-2.5 sm:p-3">
+                    <div className="bg-teal-50 rounded-lg p-2.5 sm:p-3">
                       <div className="flex gap-1">
                         {[0, 0.2, 0.4].map((delay, i) => (
-                          <div key={i} className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${delay}s` }} />
+                          <div key={i} className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: `${delay}s` }} />
                         ))}
                       </div>
                     </div>
@@ -230,7 +230,7 @@ export default function AIChat() {
               {/* Input */}
               <div className="border-t p-3 sm:p-4">
                 {!chatEnabled ? (
-                  <p className="text-sm text-center text-gray-500 py-2">
+                  <p className="text-sm text-center text-muted-foreground py-2">
                     This request has been referred to HR. Chat is no longer available.
                   </p>
                 ) : (
@@ -267,15 +267,15 @@ export default function AIChat() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-xs sm:text-sm text-gray-600">Leave Type</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Leave Type</p>
                   <p className="font-medium text-sm sm:text-base">{formatLeaveType(leaveRequest.leaveType)}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-gray-600">Duration</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Duration</p>
                   <p className="font-medium text-sm sm:text-base">{calculateDays()} days</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-gray-600">Dates</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Dates</p>
                   <p className="font-medium text-xs sm:text-sm">
                     {formatDate(leaveRequest.startDate)} — {formatDate(leaveRequest.endDate)}
                   </p>

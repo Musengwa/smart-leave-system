@@ -8,7 +8,7 @@ export default function Rules() {
     {
       title: 'Annual Leave',
       icon: Calendar,
-      color: 'text-blue-600',
+      color: 'text-teal-600',
       entitlement: '24 working days per year',
       description: 'All employees are entitled to paid annual leave after completing 12 months of continuous service.',
       rules: [
@@ -21,7 +21,7 @@ export default function Rules() {
     {
       title: 'Sick Leave',
       icon: AlertCircle,
-      color: 'text-red-600',
+      color: 'text-zinc-900',
       entitlement: 'Up to 12 days per year',
       description: 'Paid sick leave is provided for genuine illness or injury that prevents an employee from working.',
       rules: [
@@ -34,7 +34,7 @@ export default function Rules() {
     {
       title: 'Maternity Leave',
       icon: FileText,
-      color: 'text-purple-600',
+      color: 'text-teal-700',
       entitlement: '84 days (12 weeks)',
       description: 'Female employees are entitled to maternity leave before and after childbirth.',
       rules: [
@@ -47,7 +47,7 @@ export default function Rules() {
     {
       title: 'Paternity Leave',
       icon: FileText,
-      color: 'text-green-600',
+      color: 'text-zinc-700',
       entitlement: '7 working days',
       description: 'Male employees are entitled to paternity leave upon the birth of their child.',
       rules: [
@@ -60,7 +60,7 @@ export default function Rules() {
     {
       title: 'Compassionate Leave',
       icon: Clock,
-      color: 'text-orange-600',
+      color: 'text-teal-500',
       entitlement: 'Up to 5 days',
       description: 'Granted in case of death or serious illness of immediate family members.',
       rules: [
@@ -73,7 +73,7 @@ export default function Rules() {
     {
       title: 'Study Leave',
       icon: BookOpen,
-      color: 'text-indigo-600',
+      color: 'text-zinc-800',
       entitlement: 'As approved by management',
       description: 'Employees pursuing further education may apply for study leave.',
       rules: [
@@ -116,25 +116,25 @@ export default function Rules() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Leave Policies & Rules</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Leave Policies & Rules</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
             Comprehensive guide to leave entitlements and policies in accordance with Zambian Labor Law
           </p>
         </div>
 
         {/* Important Notice */}
-        <Card className="mb-6 sm:mb-8 border-blue-200 bg-blue-50">
+        <Card className="mb-6 sm:mb-8 border-teal-200 bg-teal-50">
           <CardContent className="pt-6">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-blue-900 text-sm sm:text-base">Important Information</p>
-                <p className="text-xs sm:text-sm text-blue-800 mt-1">
+                <p className="font-medium text-teal-900 text-sm sm:text-base">Important Information</p>
+                <p className="text-xs sm:text-sm text-teal-800 mt-1">
                   These policies comply with the Employment Code Act (Cap 268) of the Laws of Zambia. 
                   All leave requests are subject to operational requirements and management approval. 
                   For specific queries, please consult with HR.
@@ -146,7 +146,7 @@ export default function Rules() {
 
         {/* Leave Types */}
         <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Types of Leave</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Types of Leave</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {leaveTypes.map((leave, index) => {
               const Icon = leave.icon;
@@ -154,25 +154,25 @@ export default function Rules() {
                 <Card key={index} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gray-100 rounded-lg">
+                      <div className="p-2 bg-teal-50 rounded-lg">
                         <Icon className={`h-6 w-6 ${leave.color}`} />
                       </div>
                       <div>
                         <CardTitle className="text-lg">{leave.title}</CardTitle>
-                        <CardDescription className="text-sm font-medium text-gray-700">
+                        <CardDescription className="text-sm font-medium text-muted-foreground">
                           {leave.entitlement}
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 mb-4">{leave.description}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{leave.description}</p>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-900">Key Rules:</p>
+                      <p className="text-sm font-medium text-foreground">Key Rules:</p>
                       <ul className="space-y-1">
                         {leave.rules.map((rule, idx) => (
-                          <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-zinc-700 flex-shrink-0 mt-0.5" />
                             <span>{rule}</span>
                           </li>
                         ))}
@@ -187,7 +187,7 @@ export default function Rules() {
 
         {/* General Policies */}
         <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">General Policies</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">General Policies</h2>
           <Card>
             <CardContent className="pt-6">
               <Accordion type="single" collapsible className="w-full">
@@ -199,8 +199,8 @@ export default function Rules() {
                     <AccordionContent>
                       <ul className="space-y-2 pl-4">
                         {policy.items.map((item, idx) => (
-                          <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                            <span className="text-blue-600 mt-1">•</span>
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-teal-600 mt-1">&bull;</span>
                             <span>{item}</span>
                           </li>
                         ))}
@@ -221,24 +221,24 @@ export default function Rules() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Public Holidays</h3>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <h3 className="font-medium text-foreground mb-2 text-sm sm:text-base">Public Holidays</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Zambian public holidays are in addition to annual leave entitlement. If a public holiday 
                 falls during approved leave, it is not counted as part of your leave days.
               </p>
             </div>
             
             <div>
-              <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Leave Balance</h3>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <h3 className="font-medium text-foreground mb-2 text-sm sm:text-base">Leave Balance</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Your current leave balance is always visible on your dashboard. Leave accrues monthly 
                 and is calculated on a pro-rata basis for the first year of employment.
               </p>
             </div>
             
             <div>
-              <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Cancellation Policy</h3>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <h3 className="font-medium text-foreground mb-2 text-sm sm:text-base">Cancellation Policy</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Approved leave can be cancelled by either the employee or management. Employees should 
                 give as much notice as possible. The company reserves the right to recall employees 
                 from leave in exceptional circumstances.
@@ -246,8 +246,8 @@ export default function Rules() {
             </div>
 
             <div>
-              <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Documentation</h3>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <h3 className="font-medium text-foreground mb-2 text-sm sm:text-base">Documentation</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 All leave must be documented in the HR system. Employees should keep copies of approved 
                 leave forms and any supporting documents (medical certificates, etc.) for their records.
               </p>
@@ -256,14 +256,14 @@ export default function Rules() {
         </Card>
 
         {/* Contact */}
-        <Card className="mt-6 sm:mt-8 border-gray-200 bg-gray-50">
+        <Card className="mt-6 sm:mt-8 border-teal-100 bg-teal-50/60">
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 For questions about leave policies or specific circumstances, please contact:
               </p>
-              <p className="font-medium text-gray-900 mt-2 text-sm sm:text-base">HR Department</p>
-              <p className="text-xs sm:text-sm text-gray-600">Email: don@joe.zm</p>
+              <p className="font-medium text-foreground mt-2 text-sm sm:text-base">HR Department</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Email: don@joe.zm</p>
             </div>
           </CardContent>
         </Card>
@@ -271,3 +271,4 @@ export default function Rules() {
     </div>
   );
 }
+

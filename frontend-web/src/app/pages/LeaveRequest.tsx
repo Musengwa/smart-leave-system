@@ -129,13 +129,13 @@ export default function LeaveRequest() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Submit Leave Request</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Submit Leave Request</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
             Fill out the form below and our AI assistant will help you finalize your request
           </p>
         </div>
@@ -154,17 +154,17 @@ export default function LeaveRequest() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Employee Info */}
-              <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+              <div className="bg-teal-50 p-4 rounded-lg space-y-2">
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                  <span className="text-sm text-gray-600">Employee Name:</span>
+                  <span className="text-sm text-muted-foreground">Employee Name:</span>
                   <span className="text-sm font-medium">{user?.name}</span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                  <span className="text-sm text-gray-600">Employee ID:</span>
+                  <span className="text-sm text-muted-foreground">Employee ID:</span>
                   <span className="text-sm font-medium">{user?.employeeId}</span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                  <span className="text-sm text-gray-600">Email:</span>
+                  <span className="text-sm text-muted-foreground">Email:</span>
                   <span className="text-sm font-medium break-all">{user?.email}</span>
                 </div>
               </div>
@@ -251,8 +251,8 @@ export default function LeaveRequest() {
               </div>
 
               {/* Info Box */}
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-                <p className="text-xs sm:text-sm text-amber-800">
+              <div className="bg-teal-50 border border-teal-200 p-4 rounded-lg">
+                <p className="text-xs sm:text-sm text-teal-900">
                   <strong>Next Step:</strong> After submitting, our AI assistant will review your
                   request against Zambian labour law and your leave balance, then guide you through
                   the outcome.

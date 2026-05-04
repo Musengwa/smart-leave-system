@@ -164,7 +164,7 @@ export function AdviceChat({ balances, onPrefillChange }: AdviceChatProps) {
     <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Bot className="h-5 w-5 text-blue-600" />
+          <Bot className="h-5 w-5 text-teal-600" />
           Quick Leave Advice
         </CardTitle>
       </CardHeader>
@@ -172,12 +172,12 @@ export function AdviceChat({ balances, onPrefillChange }: AdviceChatProps) {
         <div className="flex-1 overflow-y-auto max-h-60 space-y-2">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`rounded-lg px-3 py-2 text-sm ${msg.sender === 'ai' ? 'bg-gray-100 text-gray-900' : 'bg-blue-600 text-white'}`}>{msg.text}</div>
+              <div className={`rounded-lg px-3 py-2 text-sm ${msg.sender === 'ai' ? 'bg-teal-50 text-zinc-900' : 'bg-black text-white'}`}>{msg.text}</div>
             </div>
           ))}
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-lg px-3 py-2 text-sm text-gray-500 animate-pulse">Typing...</div>
+              <div className="bg-teal-50 rounded-lg px-3 py-2 text-sm text-teal-700 animate-pulse">Typing...</div>
             </div>
           )}
         </div>
