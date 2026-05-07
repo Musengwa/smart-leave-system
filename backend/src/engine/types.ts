@@ -19,10 +19,11 @@ export type DecisionStatus =
 export interface LeaveRequest {
   leaveType: LeaveType;
   daysRequested: number;
-  startDate: string;        // ISO date string e.g. "2025-06-01"
+  startDate: string;
+  endDate?: string;         // used for calendar checks
   reason: string;
-  hasMedicalCert?: boolean; // relevant for sick leave
-  isEmergency?: boolean;    // user can flag this on the form
+  hasMedicalCert?: boolean;
+  isEmergency?: boolean;
 }
 
 // ─── Employee Profile (pulled from Supabase) ─────────────────────────────────
@@ -31,7 +32,8 @@ export interface EmployeeProfile {
   id: string;
   name: string;
   gender: "male" | "female" | "other";
-  monthsWorked: number;     // total months at company
+  monthsWorked: number;
+  department?: string;      // used for department-specific blackout checks
   leaveBalance: LeaveBalance;
 }
 
@@ -49,47 +51,42 @@ export interface LeaveBalance {
 export interface DecisionResult {
   decision: DecisionStatus;
   module: LeaveType;
-
-  // How many days were actually approved (may differ from requested)
   daysApproved?: number;
-
-  // Plain English reason — this gets handed to ChatGPT as context
   reason: string;
-
-  // Specific flags for ChatGPT to act on
   flags: DecisionFlag[];
-
-  // Whether new info from the chat can trigger a re-evaluation
-  // Always false when decision is REFER_HR
   canOverride: boolean;
-
-  // Any alternatives the engine itself can suggest
-  // e.g. "You have 4 days available, consider splitting the request"
   suggestions?: string[];
+  calendarResult?: any;     // attached by engine after calendar check
 }
 
 // ─── Flags ────────────────────────────────────────────────────────────────────
-// These tell ChatGPT *what to focus on* in the conversation
 
 export type DecisionFlag =
-  | "INSUFFICIENT_BALANCE"      // not enough days left
-  | "NEEDS_MEDICAL_CERT"        // sick leave > 2 days, no cert provided
-  | "INSUFFICIENT_SERVICE"      // e.g. maternity needs 2 years
-  | "EXCEEDS_SINGLE_REQUEST_LIMIT" // too many days in one go
-  | "GENDER_INELIGIBLE"         // e.g. male applying for maternity
-  | "REQUIRES_DOCUMENTATION"    // study leave, maternity etc.
-  | "PARTIAL_APPROVAL_POSSIBLE" // some days can be approved, not all
-  | "EMERGENCY_FLAGGED";        // user marked as emergency
+  | "INSUFFICIENT_BALANCE"
+  | "NEEDS_MEDICAL_CERT"
+  | "INSUFFICIENT_SERVICE"
+  | "EXCEEDS_SINGLE_REQUEST_LIMIT"
+  | "GENDER_INELIGIBLE"
+  | "REQUIRES_DOCUMENTATION"
+  | "PARTIAL_APPROVAL_POSSIBLE"
+  | "EMERGENCY_FLAGGED"
+  // Calendar flags
+  | "BLACKOUT_HARD"
+  | "BLACKOUT_SOFT"
+  | "HIGH_TEAM_CONFLICT"
+  | "MEDIUM_TEAM_CONFLICT"
+  | "CONTAINS_PUBLIC_HOLIDAYS"
+  | "FULL_PERIOD_IS_HOLIDAYS";
 
-// ─── What gets stored in Supabase after a decision ───────────────────────────
+// ─── Supabase record ─────────────────────────────────────────────────────────
 
 export interface LeaveRecord {
-  id?: string;                  // assigned by Supabase
+  id?: string;
   employeeId: string;
   request: LeaveRequest;
   decision: DecisionResult;
   chatTranscript?: ChatMessage[];
-  finalDecision?: DecisionStatus; // may differ if chat changed outcome
+  finalDecision?: DecisionStatus;
   createdAt?: string;
 }
 

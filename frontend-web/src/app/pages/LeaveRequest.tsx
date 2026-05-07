@@ -12,6 +12,7 @@ import { Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { submitLeaveRequest, calculateDays } from '../services/leaveService';
 import type { AdvicePrefillData } from '../components/AdviceChat';
+import { LeavePlanningCalendar } from '../components/LeavePlanningCalendar';
 
 type LeaveRequestLocationState = {
   prefill?: AdvicePrefillData;
@@ -128,6 +129,14 @@ export default function LeaveRequest() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleRangeChange = (startDate: string, endDate: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      startDate,
+      endDate: endDate || startDate,
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-transparent">
       <Navbar />
@@ -216,6 +225,16 @@ export default function LeaveRequest() {
                   />
                 </div>
               </div>
+
+              {user?.id ? (
+                <LeavePlanningCalendar
+                  employeeId={user.id}
+                  department={user.department}
+                  startDate={formData.startDate}
+                  endDate={formData.endDate}
+                  onRangeChange={handleRangeChange}
+                />
+              ) : null}
 
               {/* Reason */}
               <div className="space-y-2">
