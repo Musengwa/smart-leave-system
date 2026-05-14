@@ -391,7 +391,14 @@ export default function Dashboard() {
         {/* Advice + Request CTA */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="lg:col-span-2">
-            <AdviceChat balances={adviceBalances} onPrefillChange={setAdvicePrefill} />
+            <AdviceChat 
+              balances={adviceBalances} 
+              onPrefillChange={setAdvicePrefill}
+              onFinalize={(data) => {
+                setAdvicePrefill(data);
+                handleMakeLeaveRequest();
+              }}
+            />
           </div>
 
           <Card className="lg:col-span-1">
@@ -402,17 +409,24 @@ export default function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-md border bg-gray-50 p-3 text-xs text-gray-600">
-                <p>Detected details:</p>
-                <p>Type: {advicePrefill.leaveType ?? 'Not set'}</p>
-                <p>Start date: {advicePrefill.startDate ?? 'Not set'}</p>
-                <p>End date: {advicePrefill.endDate ?? 'Not set'}</p>
+              <div className="rounded-md border bg-gray-50 p-3 text-xs text-gray-600 space-y-1.5">
+                <p className="font-semibold text-gray-700">Detected details from chat:</p>
+                <p>Type: <span className="font-medium text-gray-800">{advicePrefill.leaveType ?? '—'}</span></p>
+                <p>Start date: <span className="font-medium text-gray-800">{advicePrefill.startDate ?? '—'}</span></p>
+                <p>End date: <span className="font-medium text-gray-800">{advicePrefill.endDate ?? '—'}</span></p>
+                {advicePrefill.reason && <p>Reason: <span className="font-medium text-gray-800">{advicePrefill.reason}</span></p>}
+                {advicePrefill.hasMedicalCert && <p className="text-teal-700">✓ Medical certificate provided</p>}
+                {advicePrefill.isEmergency && <p className="text-orange-700">⚠ Emergency leave</p>}
               </div>
-              <Button className="w-full" onClick={handleMakeLeaveRequest}>
+              <Button 
+                className="w-full" 
+                onClick={handleMakeLeaveRequest}
+                disabled={!advicePrefill.leaveType}
+              >
                 Make Leave Request Now
               </Button>
               <p className="text-xs text-gray-500">
-                After submitting the form, you will continue to the full Leave AI chat.
+                Chat with the advisor first to populate the form details automatically.
               </p>
             </CardContent>
           </Card>

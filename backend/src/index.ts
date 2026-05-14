@@ -1,11 +1,11 @@
-import { LeaveRequest, EmployeeProfile, DecisionResult, LeaveType } from "./types";
-import { evaluateAnnual }       from "../modules/annual";
-import { evaluateSick }         from "../modules/sick";
-import { evaluateMaternity }    from "../modules/maternity";
-import { evaluatePaternity }    from "../modules/paternity";
-import { evaluateCompassionate} from "../modules/compassionate";
-import { evaluateStudy }        from "../modules/study";
-import { checkCalendar, CalendarCheckResult } from "../calendar/calendarService";
+import { LeaveRequest, EmployeeProfile, DecisionResult, LeaveType } from "./engine/types";
+import { evaluateAnnual }       from "./modules/annual";
+import { evaluateSick }         from "./modules/sick";
+import { evaluateMaternity }    from "./modules/maternity";
+import { evaluatePaternity }    from "./modules/paternity";
+import { evaluateCompassionate} from "./modules/compassionate";
+import { evaluateStudy }        from "./modules/study";
+import { checkCalendar, CalendarCheckResult } from "./calendar/calendarService";
 
 // ─── Module Registry ──────────────────────────────────────────────────────────
 
@@ -57,15 +57,32 @@ export async function runDecisionEngine(
   }
 
   // ── Step 2: Run the calendar check ───────────────────────────────────────
+  // Compute endDate if not provided
+  const endDate = request.endDate || computeEndDate(request.startDate, request.daysRequested);
+  
   const calendar = await checkCalendar(
     request.startDate,
-    request.endDate,
+    endDate,
     employee.id,
     employee.department
   );
 
   // Merge calendar result into the module result
   return applyCalendarResult(moduleResult, calendar, request);
+}
+
+// ─── Helper: Compute end date from start date and days ────────────────────────
+
+function computeEndDate(startDate: string, daysRequested: number): string {
+  const start = new Date(startDate);
+  const end = new Date(start);
+  end.setDate(start.getDate() + daysRequested - 1);
+  
+  const year = end.getFullYear();
+  const month = String(end.getMonth() + 1).padStart(2, "0");
+  const day = String(end.getDate()).padStart(2, "0");
+  
+  return `${year}-${month}-${day}`;
 }
 
 // ─── Apply calendar check to module result ────────────────────────────────────

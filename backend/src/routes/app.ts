@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import leaveRoutes from "./leave";
 import chatRoutes from "./chat";
+import adviceRoutes from "./advice";
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use("/leave", leaveRoutes);
 app.use("/chat", chatRoutes);
+app.use("/advice", adviceRoutes);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

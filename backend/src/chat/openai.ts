@@ -376,7 +376,7 @@ async function generateFromGemini(
   });
 }
 
-async function generateWithActiveProvider(
+export async function generateWithActiveProvider(
   systemPrompt: string,
   userPrompt: string,
   maxTokens: number,
